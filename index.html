@@ -1078,6 +1078,14 @@
       return "https://www.xiaohongshu.com/search_result?keyword=" + encodeURIComponent(query);
     }
 
+    function xhsAppUrl(query) {
+      return "xhsdiscover://search/result?keyword=" + encodeURIComponent(query);
+    }
+
+    function xhsWebFallbackUrl(query) {
+      return "https://www.google.com/search?q=" + encodeURIComponent("site:xiaohongshu.com " + query);
+    }
+
     function makeStopLink(label, url, className = "") {
       return `<a class="btn ${className}" target="_blank" rel="noopener" href="${url}">${label}</a>`;
     }
@@ -1117,7 +1125,8 @@
               </div>
               <div class="stop-links">
                 ${makeStopLink("Google Maps", googleMapsUrl(stop.place), "primary")}
-                ${makeStopLink("小红书搜索", xhsUrl(stop.xhs))}
+                ${makeStopLink("小红书App", xhsAppUrl(stop.xhs))}
+                ${makeStopLink("网页备用", xhsWebFallbackUrl(stop.xhs))}
               </div>
             </div>
           </section>
