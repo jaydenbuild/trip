@@ -1,0 +1,1252 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>瑞士与巴黎国庆行程</title>
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --ink: #1d2528;
+      --muted: #657074;
+      --paper: #f6f1e8;
+      --panel: #fffaf0;
+      --line: #d8cbb9;
+      --accent: #d54d33;
+      --accent-dark: #9e2f20;
+      --lake: #2f8fa4;
+      --forest: #416d53;
+      --shadow: 0 24px 70px rgba(54, 42, 27, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(213, 77, 51, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(65, 109, 83, 0.08) 1px, transparent 1px),
+        var(--paper);
+      background-size: 28px 28px;
+      font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(380px, 48vw) minmax(420px, 1fr);
+    }
+
+    .map-pane {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border-right: 1px solid rgba(29, 37, 40, 0.14);
+      background: rgba(246, 241, 232, 0.9);
+    }
+
+    .brand {
+      display: grid;
+      gap: 8px;
+    }
+
+    .kicker {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--accent-dark);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(30px, 4vw, 56px);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .summary {
+      margin: 0;
+      max-width: 640px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    #map {
+      min-height: 430px;
+      flex: 1;
+      border: 1px solid rgba(29, 37, 40, 0.2);
+      box-shadow: var(--shadow);
+      background: #d7e4d5;
+      overflow: hidden;
+    }
+
+    .map-wrap {
+      position: relative;
+      min-height: 430px;
+      flex: 1;
+    }
+
+    .map-wrap #map {
+      position: absolute;
+      inset: 0;
+      min-height: 0;
+    }
+
+    .map-fallback {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 800;
+      display: none;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border: 1px solid rgba(29, 37, 40, 0.2);
+      background: rgba(255, 250, 240, 0.96);
+      box-shadow: 0 12px 32px rgba(29, 37, 40, 0.18);
+      color: #334044;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .map-fallback.show {
+      display: flex;
+    }
+
+    .map-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      background: rgba(255, 250, 240, 0.88);
+      padding: 7px 10px;
+      font-weight: 700;
+    }
+
+    .content {
+      padding: 28px 30px 56px;
+      background: linear-gradient(180deg, rgba(255, 250, 240, 0.86), rgba(246, 241, 232, 0.96));
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(255, 250, 240, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(29, 37, 40, 0.08);
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab {
+      appearance: none;
+      border: 1px solid rgba(29, 37, 40, 0.18);
+      background: #fffaf0;
+      color: var(--ink);
+      min-width: 66px;
+      height: 40px;
+      padding: 0 12px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 3px 0 rgba(29, 37, 40, 0.14);
+      transition: transform 150ms ease, background 150ms ease, color 150ms ease;
+    }
+
+    .tab:hover { transform: translateY(-1px); }
+
+    .tab.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent-dark);
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(29, 37, 40, 0.2);
+      background: #fffaf0;
+      cursor: pointer;
+      font-size: 18px;
+      box-shadow: 0 3px 0 rgba(29, 37, 40, 0.14);
+    }
+
+    .day-card {
+      border: 1px solid rgba(29, 37, 40, 0.18);
+      background: rgba(255, 250, 240, 0.92);
+      box-shadow: var(--shadow);
+      padding: clamp(18px, 3vw, 28px);
+    }
+
+    .day-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(28px, 3.2vw, 46px);
+      line-height: 1;
+    }
+
+    .route-title {
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .route-anchors {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      color: #334044;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .anchor-tag {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.46);
+      padding: 7px 9px;
+    }
+
+    .badge {
+      border: 1px solid var(--ink);
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+      min-width: 118px;
+      background: #f0ddc4;
+    }
+
+    .stay-link {
+      display: block;
+      transition: transform 150ms ease, background 150ms ease;
+    }
+
+    .stay-link:hover {
+      transform: translateY(-1px);
+      background: #ead0ad;
+    }
+
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid rgba(29, 37, 40, 0.2);
+      background: #fffaf0;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent-dark);
+    }
+
+    .btn.lake {
+      background: var(--lake);
+      color: white;
+      border-color: #236a7b;
+    }
+
+    .btn.ticket {
+      background: var(--forest);
+      color: white;
+      border-color: #294b39;
+    }
+
+    .timeline {
+      position: relative;
+      margin-top: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .timeline:before {
+      content: "";
+      position: absolute;
+      left: 21px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: linear-gradient(var(--accent), var(--lake), var(--forest));
+      opacity: 0.45;
+    }
+
+    .stop {
+      position: relative;
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 14px;
+    }
+
+    .num {
+      position: relative;
+      z-index: 2;
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: white;
+      border: 3px solid var(--panel);
+      font-weight: 900;
+      box-shadow: 0 5px 16px rgba(29, 37, 40, 0.22);
+    }
+
+    .stop-body {
+      border: 1px solid rgba(29, 37, 40, 0.12);
+      background: rgba(255, 255, 255, 0.42);
+      padding: 15px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      color: var(--accent-dark);
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.25;
+    }
+
+    .desc {
+      color: var(--muted);
+      line-height: 1.65;
+      margin: 8px 0 0;
+      font-size: 14px;
+    }
+
+    .booking {
+      margin-top: 10px;
+      display: grid;
+      gap: 5px;
+      color: #334044;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .booking strong { color: var(--ink); }
+
+    .ticket-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .stop-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .leaflet-popup-content {
+      margin: 10px 12px;
+      font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .popup-title {
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .popup-text {
+      color: #4e5b5f;
+      font-size: 12px;
+    }
+
+    .pin-label {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border: 2px solid #fffaf0;
+      background: var(--accent);
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 6px 18px rgba(29, 37, 40, 0.28);
+    }
+
+    .pin-label.anchor {
+      background: var(--forest);
+    }
+
+    @media (max-width: 940px) {
+      .shell { grid-template-columns: 1fr; }
+      .map-pane {
+        position: relative;
+        height: auto;
+        min-height: 560px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(29, 37, 40, 0.14);
+      }
+      .map-wrap { min-height: 360px; }
+      .content { padding: 18px 14px 36px; }
+      .toolbar {
+        position: relative;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .day-head { grid-template-columns: 1fr; }
+      .badge { justify-self: start; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside class="map-pane">
+      <section class="brand">
+        <div class="kicker">Swiss + Paris, 2026 National Day</div>
+        <h1>瑞士与巴黎<br />逐日路线板</h1>
+        <p class="summary">
+          按日期切换查看当天路线。地图显示当日主要移动顺序；每个景点都提供 Google Maps 和小红书搜索入口。
+          瑞士段默认使用 9/28-10/5 连续 8 日瑞士旅行通票。
+        </p>
+      </section>
+      <div class="map-wrap">
+        <div id="map" aria-label="当天路线地图"></div>
+        <div class="map-fallback" id="mapFallback">
+          <span>地图加载失败时，可以直接打开当天完整路线。</span>
+          <a class="btn primary" id="fallbackRoute" target="_blank" rel="noopener" href="#">当天完整路线</a>
+        </div>
+      </div>
+      <div class="map-note">
+        <span class="pill">红色编号：当日停靠点</span>
+        <span class="pill">蓝线：建议路线顺序</span>
+        <span class="pill">地图需联网加载</span>
+      </div>
+    </aside>
+
+    <section class="content">
+      <div class="toolbar">
+        <div class="tabs" id="tabs"></div>
+        <div class="controls">
+          <button class="icon-btn" id="prevDay" title="上一天" aria-label="上一天">‹</button>
+          <button class="icon-btn" id="nextDay" title="下一天" aria-label="下一天">›</button>
+        </div>
+      </div>
+      <article class="day-card" id="dayCard"></article>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const itinerary = [
+      {
+        date: "9/28",
+        title: "苏黎世抵达日",
+        sleep: "住宿：苏黎世皇冠假日酒店",
+        sleepPlace: "Crowne Plaza Zurich, Badenerstrasse 420, 8040 Zurich, Switzerland",
+        route: "苏黎世机场 → 苏黎世皇冠假日酒店 → 苏黎世老城 → 苏黎世湖 → 苏黎世皇冠假日酒店",
+        startPoint: { label: "起点：苏黎世机场", place: "Zurich Airport Terminal 2", coords: [47.4505, 8.5616] },
+        endPoint: { label: "终点：苏黎世皇冠假日酒店", place: "Crowne Plaza Zurich, Badenerstrasse 420, 8040 Zurich, Switzerland", coords: [47.3802, 8.5043] },
+        center: [47.374, 8.535],
+        zoom: 12,
+        stops: [
+          {
+            time: "07:30-10:00",
+            type: "入境 + 交通",
+            name: "苏黎世机场、苏黎世中央火车站",
+            place: "Zurich Airport, Zurich HB",
+            coords: [47.4505, 8.5616],
+            transport: "从苏黎世机场入境后，机场火车到苏黎世中央火车站，再转电车/公交到苏黎世皇冠假日酒店放行李。瑞士旅行通票可用。",
+            booking: "无需预订。落地后看 SBB App 实时班次。",
+            xhs: "苏黎世机场 到市区 火车 攻略"
+          },
+          {
+            time: "11:00-17:30",
+            type: "城市散步",
+            name: "苏黎世老城、班霍夫大街、林登霍夫山、苏黎世湖",
+            place: "Zurich Old Town, Bahnhofstrasse, Lindenhof, Lake Zurich",
+            coords: [47.372, 8.542],
+            transport: "从苏黎世皇冠假日酒店坐电车进城，老城区域步行为主，最后走到苏黎世湖边。",
+            booking: "老城和湖边免费。圣母教堂如入内看彩窗，现场或官网购票即可。",
+            xhs: "苏黎世 老城 苏黎世湖 一日游"
+          },
+          {
+            time: "18:00-20:00",
+            type: "餐饮",
+            name: "军械库餐厅",
+            place: "Zeughauskeller Zurich",
+            coords: [47.3697, 8.5391],
+            transport: "从老城步行或坐电车到阅兵广场附近。晚餐后坐电车回苏黎世皇冠假日酒店。",
+            booking: "建议提前 1-3 天订位，适合吃苏黎世小牛肉、香肠、薯饼。",
+            ticketLinks: [{ label: "餐厅官网", url: "https://www.zeughauskeller.ch/en" }],
+            xhs: "苏黎世 Zeughauskeller 瑞士菜"
+          }
+        ]
+      },
+      {
+        date: "9/29",
+        title: "卢塞恩与瑞吉山",
+        sleep: "住宿：卢塞恩大使自助入住酒店",
+        sleepPlace: "Ambassador Self Check-in Hotel Lucerne, Zurichstrasse 3, 6004 Lucerne, Switzerland",
+        route: "苏黎世皇冠假日酒店 → 卢塞恩大使自助入住酒店 → 维茨瑙 → 瑞吉山 → 韦吉斯 → 卢塞恩大使自助入住酒店",
+        startPoint: { label: "起点：苏黎世皇冠假日酒店", place: "Crowne Plaza Zurich, Badenerstrasse 420, 8040 Zurich, Switzerland", coords: [47.3802, 8.5043] },
+        endPoint: { label: "终点：卢塞恩大使自助入住酒店", place: "Ambassador Self Check-in Hotel Lucerne, Zurichstrasse 3, 6004 Lucerne, Switzerland", coords: [47.0555, 8.3104] },
+        center: [47.044, 8.44],
+        zoom: 10,
+        stops: [
+          {
+            time: "08:00-09:15",
+            type: "换城",
+            name: "苏黎世到卢塞恩",
+            place: "Zurich to Lucerne",
+            coords: [47.0502, 8.3093],
+            transport: "从苏黎世皇冠假日酒店出发，坐电车到苏黎世中央火车站，再坐火车到卢塞恩。到站后先去卢塞恩大使自助入住酒店寄存行李。",
+            booking: "瑞士旅行通票直接乘坐，无需订座。",
+            xhs: "苏黎世 到 卢塞恩 火车"
+          },
+          {
+            time: "09:45-12:00",
+            type: "湖船 + 上山",
+            name: "卢塞恩湖船到维茨瑙，再上瑞吉山",
+            place: "Lake Lucerne, Vitznau, Rigi Kulm",
+            coords: [47.0567, 8.4854],
+            transport: "卢塞恩码头坐船到维茨瑙，换瑞吉齿轨铁路到瑞吉山顶。",
+            booking: "瑞士旅行通票覆盖湖船和瑞吉铁路。出发前用 SBB App 查船班。",
+            xhs: "瑞吉山 卢塞恩 湖船 齿轨铁路"
+          },
+          {
+            time: "12:00-15:30",
+            type: "山景",
+            name: "瑞吉山顶、瑞吉卡尔特巴德、韦吉斯",
+            place: "Rigi Kulm, Rigi Kaltbad, Weggis",
+            coords: [47.0563, 8.4850],
+            transport: "山顶观景后可坐到瑞吉卡尔特巴德，再缆车下韦吉斯，坐船回卢塞恩。",
+            booking: "不用提前订票。天气差可缩短山顶停留。",
+            xhs: "瑞吉山 一日游 路线"
+          },
+          {
+            time: "16:00-20:30",
+            type: "老城",
+            name: "卡佩尔廊桥、狮子纪念碑、卢塞恩老城",
+            place: "Chapel Bridge, Lion Monument, Lucerne Old Town",
+            coords: [47.0517, 8.3073],
+            transport: "回到卢塞恩码头后步行游览。酒店在狮子纪念碑一带，最后步行回卢塞恩大使自助入住酒店。",
+            booking: "景点免费。Old Swiss House 晚餐建议提前订位。",
+            ticketLinks: [{ label: "Old Swiss House 订位", url: "https://www.oldswisshouse.ch/en/" }],
+            xhs: "卢塞恩 卡佩尔廊桥 狮子纪念碑"
+          }
+        ]
+      },
+      {
+        date: "9/30",
+        title: "卢塞恩、龙疆、因特拉肯",
+        sleep: "住宿：因特拉肯 Apartment Anemone 民宿",
+        sleepPlace: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland",
+        route: "卢塞恩大使自助入住酒店 → 龙疆 → 因特拉肯 Apartment Anemone 民宿",
+        startPoint: { label: "起点：卢塞恩大使自助入住酒店", place: "Ambassador Self Check-in Hotel Lucerne, Zurichstrasse 3, 6004 Lucerne, Switzerland", coords: [47.0555, 8.3104] },
+        endPoint: { label: "终点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        center: [46.81, 8.03],
+        zoom: 10,
+        stops: [
+          {
+            time: "08:30-09:30",
+            type: "出发",
+            name: "卢塞恩到龙疆",
+            place: "Lucerne to Lungern",
+            coords: [47.0502, 8.3093],
+            transport: "从卢塞恩大使自助入住酒店出发到卢塞恩火车站，坐卢塞恩-因特拉肯景观线方向火车，在龙疆下车。瑞士旅行通票可用。",
+            booking: "无需订座。建议把大件行李留在车站储物柜，若柜子满就尽量轻装随身。",
+            xhs: "卢塞恩 到 龙疆 火车"
+          },
+          {
+            time: "09:30-13:30",
+            type: "湖景小镇",
+            name: "龙疆湖、龙疆小镇观景点",
+            place: "Lungern, Lake Lungern",
+            coords: [46.7867, 8.1596],
+            transport: "车站出来步行到湖边和小镇拍照。体力好可上观景点，时间紧就湖边轻松走。",
+            booking: "无需门票。天气好很值得停，阴雨则压缩到 1 小时。",
+            xhs: "龙疆 瑞士 龙疆湖 攻略"
+          },
+          {
+            time: "13:30-15:30",
+            type: "景观火车",
+            name: "龙疆到因特拉肯",
+            place: "Lungern to Interlaken",
+            coords: [46.6863, 7.8632],
+            transport: "继续坐卢塞恩-因特拉肯景观线，经布里恩茨湖方向到因特拉肯东站，再转到因特拉肯西站。",
+            booking: "瑞士旅行通票可用，无需订座。",
+            xhs: "龙疆 到 因特拉肯 黄金列车"
+          },
+          {
+            time: "16:00-19:30",
+            type: "入住 + 轻松逛",
+            name: "因特拉肯西站、民宿、荷黑马特草坪",
+            place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland",
+            coords: [46.6839, 7.8516],
+            transport: "到因特拉肯西站后步行/公交到 Apartment Anemone 民宿入住。入住后去荷黑马特草坪和小镇吃饭，最后回民宿。",
+            booking: "无需门票。哈德库尔姆改为备选，不放在这天主线。",
+            xhs: "因特拉肯 荷黑马特 晚餐"
+          }
+        ]
+      },
+      {
+        date: "10/1",
+        title: "格林德瓦与菲斯特",
+        sleep: "住宿：因特拉肯 Apartment Anemone 民宿",
+        sleepPlace: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland",
+        route: "因特拉肯 Apartment Anemone 民宿 → 格林德瓦 → 菲斯特 → 巴赫阿尔普湖 → 因特拉肯 Apartment Anemone 民宿",
+        startPoint: { label: "起点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        endPoint: { label: "终点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        center: [46.653, 8.02],
+        zoom: 11,
+        stops: [
+          {
+            time: "07:45-09:00",
+            type: "进山",
+            name: "因特拉肯到格林德瓦",
+            place: "Interlaken to Grindelwald",
+            coords: [46.6242, 8.0414],
+            transport: "从 Apartment Anemone 民宿出发到因特拉肯西站，坐到因特拉肯东站后换车到格林德瓦。瑞士旅行通票覆盖普通火车。",
+            booking: "无需订座。",
+            xhs: "因特拉肯 到 格林德瓦 火车"
+          },
+          {
+            time: "09:00-12:30",
+            type: "山顶",
+            name: "菲斯特、菲斯特悬崖步道",
+            place: "Grindelwald First, First Cliff Walk",
+            coords: [46.6596, 8.0534],
+            transport: "格林德瓦步行或公交到菲斯特缆车站，坐缆车上山。",
+            booking: "需补票。建议出发前 1-3 天看天气后在 Jungfrau 官网购买。",
+            ticketLinks: [{ label: "Jungfrau 菲斯特票务", url: "https://www.jungfrau.ch/en-gb/grindelwaldfirst/" }],
+            xhs: "格林德瓦 First 悬崖步道 攻略"
+          },
+          {
+            time: "12:30-15:30",
+            type: "徒步",
+            name: "巴赫阿尔普湖",
+            place: "Bachalpsee",
+            coords: [46.6697, 8.0246],
+            transport: "从菲斯特山站徒步往返，路程约 2 小时上下，留拍照时间。",
+            booking: "无需门票。穿防滑鞋，天气差或云雾大可取消。",
+            xhs: "巴赫阿尔普湖 徒步"
+          },
+          {
+            time: "15:30-18:30",
+            type: "可选体验",
+            name: "菲斯特飞索、山地卡丁车、滑板车",
+            place: "First Flyer, Mountain Cart, Trottibike",
+            coords: [46.6596, 8.0534],
+            transport: "从山上分段下行体验，最后回格林德瓦坐火车回因特拉肯西站，再回 Apartment Anemone 民宿。",
+            booking: "冒险项目受天气影响，通常现场确认和排队。旺季尽早上山。",
+            ticketLinks: [{ label: "First 冒险项目", url: "https://www.jungfrau.ch/en-gb/grindelwaldfirst/first-flyer/" }],
+            xhs: "菲斯特飞索 山地卡丁车"
+          }
+        ]
+      },
+      {
+        date: "10/2",
+        title: "劳特布龙嫩、米伦、雪朗峰",
+        sleep: "住宿：因特拉肯 Apartment Anemone 民宿",
+        sleepPlace: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland",
+        route: "因特拉肯 Apartment Anemone 民宿 → 劳特布龙嫩 → 特吕默尔巴赫瀑布 → 施特歇尔贝格 → 米伦 → 雪朗峰 → 因特拉肯 Apartment Anemone 民宿",
+        startPoint: { label: "起点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        endPoint: { label: "终点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        center: [46.575, 7.88],
+        zoom: 11,
+        stops: [
+          {
+            time: "07:30-08:30",
+            type: "山谷",
+            name: "因特拉肯到劳特布龙嫩",
+            place: "Interlaken to Lauterbrunnen",
+            coords: [46.5935, 7.9091],
+            transport: "从 Apartment Anemone 民宿出发到因特拉肯西站，再到因特拉肯东站换火车去劳特布龙嫩。",
+            booking: "瑞士旅行通票覆盖普通火车。",
+            xhs: "劳特布龙嫩 山谷 攻略"
+          },
+          {
+            time: "08:45-10:15",
+            type: "瀑布",
+            name: "施陶河瀑布",
+            place: "Staubbach Falls",
+            coords: [46.5891, 7.9092],
+            transport: "劳特布龙嫩车站步行前往，之后回主路坐公交。",
+            booking: "免费。雨天注意湿滑。",
+            xhs: "施陶河瀑布 劳特布龙嫩"
+          },
+          {
+            time: "10:30-12:00",
+            type: "瀑布",
+            name: "特吕默尔巴赫瀑布",
+            place: "Trummelbach Falls",
+            coords: [46.571, 7.912],
+            transport: "劳特布龙嫩坐公交到特吕默尔巴赫瀑布站。",
+            booking: "现场买票。通常 4 月初至 11 月开放，9:00-17:00，出发前看官网天气/开放状态。",
+            ticketLinks: [{ label: "瀑布官网", url: "https://www.truemmelbachfaelle.ch/e/" }],
+            xhs: "特吕默尔巴赫瀑布 攻略"
+          },
+          {
+            time: "12:00-16:30",
+            type: "雪山",
+            name: "米伦、比尔格惊险步道、雪朗峰",
+            place: "Murren, Birg Thrill Walk, Schilthorn",
+            coords: [46.5575, 7.8356],
+            transport: "公交到施特歇尔贝格，换缆车经米伦、比尔格上雪朗峰。下山走米伦到格吕奇阿尔普的环线，再回因特拉肯民宿。",
+            booking: "建议提前 1-3 天看天气后在雪朗峰官网买票。Piz Gloria 餐厅若用餐需订位。",
+            ticketLinks: [
+              { label: "雪朗峰票务", url: "https://schilthorn.ch/en/Tickets" },
+              { label: "Piz Gloria 餐厅", url: "https://schilthorn.ch/6/en/Schilthorn_Brunch" }
+            ],
+            xhs: "雪朗峰 米伦 比尔格 惊险步道"
+          }
+        ]
+      },
+      {
+        date: "10/3",
+        title: "雪尼格普拉特与布里恩茨湖",
+        sleep: "住宿：因特拉肯 Apartment Anemone 民宿",
+        sleepPlace: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland",
+        route: "因特拉肯 Apartment Anemone 民宿 → 维尔德斯维尔 → 雪尼格普拉特 → 布里恩茨湖 → 因特拉肯 Apartment Anemone 民宿",
+        startPoint: { label: "起点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        endPoint: { label: "终点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        center: [46.69, 7.94],
+        zoom: 11,
+        stops: [
+          {
+            time: "08:00-09:00",
+            type: "上山",
+            name: "维尔德斯维尔到雪尼格普拉特",
+            place: "Wilderswil to Schynige Platte",
+            coords: [46.6556, 7.9049],
+            transport: "从 Apartment Anemone 民宿到因特拉肯西站，再去维尔德斯维尔，换复古齿轨铁路上山。",
+            booking: "需补票。建议出发前 1-3 天看天气后在 Jungfrau 官网买。",
+            ticketLinks: [{ label: "Jungfrau 雪尼格普拉特票务", url: "https://www.jungfrau.ch/en-gb/schynige-platte/" }],
+            xhs: "雪尼格普拉特 齿轨铁路"
+          },
+          {
+            time: "09:00-13:30",
+            type: "观景",
+            name: "雪尼格普拉特观景台、短线徒步",
+            place: "Schynige Platte",
+            coords: [46.6556, 7.9049],
+            transport: "山上步行游览，可走短线观景环线。",
+            booking: "雪尼格普拉特 2026 运营期到 10/25。天气不好可改为湖区小镇。",
+            xhs: "雪尼格普拉特 徒步 攻略"
+          },
+          {
+            time: "14:30-17:30",
+            type: "湖船",
+            name: "布里恩茨湖、伊瑟尔特瓦尔德或吉斯巴赫",
+            place: "Lake Brienz, Iseltwald, Giessbach",
+            coords: [46.712, 7.963],
+            transport: "回因特拉肯东站码头，按船班选择伊瑟尔特瓦尔德/吉斯巴赫/布里恩茨停靠。晚些时候回因特拉肯西站，再回民宿。",
+            booking: "湖船瑞士旅行通票覆盖。当天按 BLS 船班决定停靠点。",
+            ticketLinks: [{ label: "BLS 湖船时刻", url: "https://www.bls-schiff.ch/en/lake-cruise/timetable" }],
+            xhs: "布里恩茨湖 伊瑟尔特瓦尔德 吉斯巴赫"
+          }
+        ]
+      },
+      {
+        date: "10/4",
+        title: "伯尔尼与图恩",
+        sleep: "住宿：因特拉肯 Apartment Anemone 民宿",
+        sleepPlace: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland",
+        route: "因特拉肯 Apartment Anemone 民宿 → 伯尔尼 → 图恩 → 因特拉肯 Apartment Anemone 民宿",
+        startPoint: { label: "起点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        endPoint: { label: "终点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        center: [46.88, 7.55],
+        zoom: 10,
+        stops: [
+          {
+            time: "08:30-09:30",
+            type: "换城",
+            name: "因特拉肯到伯尔尼",
+            place: "Interlaken to Bern",
+            coords: [46.948, 7.4474],
+            transport: "从 Apartment Anemone 民宿出发到因特拉肯西站，坐火车到伯尔尼。",
+            booking: "瑞士旅行通票覆盖，无需订座。",
+            xhs: "伯尔尼 老城 一日游"
+          },
+          {
+            time: "09:30-14:00",
+            type: "老城",
+            name: "伯尔尼老城、钟楼、熊苑、玫瑰园",
+            place: "Bern Old Town, Zytglogge, Bear Park, Rose Garden",
+            coords: [46.9479, 7.459],
+            transport: "步行为主。可从火车站一路走到玫瑰园，再公交回市中心。",
+            booking: "老城免费。钟楼内部导览如想参加，提前官网预订。",
+            ticketLinks: [{ label: "伯尔尼钟楼导览", url: "https://www.bern.com/en/detail/zytglogge-clock-tower" }],
+            xhs: "伯尔尼 钟楼 熊苑 玫瑰园"
+          },
+          {
+            time: "14:00-17:30",
+            type: "湖城",
+            name: "图恩老城、图恩城堡、图恩湖",
+            place: "Thun Old Town, Thun Castle, Lake Thun",
+            coords: [46.758, 7.628],
+            transport: "伯尔尼坐火车到图恩。图恩老城步行，返程坐火车或湖船回因特拉肯西站，再回民宿。",
+            booking: "图恩城堡如入内现场/官网买。湖船看当天班次。",
+            ticketLinks: [
+              { label: "图恩城堡", url: "https://www.schlossthun.ch/en/" },
+              { label: "图恩湖船时刻", url: "https://www.bls-schiff.ch/en/lake-cruise/timetable" }
+            ],
+            xhs: "图恩 瑞士 老城 城堡 图恩湖"
+          }
+        ]
+      },
+      {
+        date: "10/5",
+        title: "因特拉肯到巴黎",
+        sleep: "住宿：巴黎 Hotel du Printemps",
+        sleepPlace: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France",
+        route: "因特拉肯 Apartment Anemone 民宿 → 巴塞尔 → 巴黎里昂车站 → 巴黎 Hotel du Printemps",
+        startPoint: { label: "起点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
+        endPoint: { label: "终点：巴黎 Hotel du Printemps", place: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France", coords: [48.8756, 2.3253] },
+        center: [47.8, 5.2],
+        zoom: 6,
+        stops: [
+          {
+            time: "07:30-13:30",
+            type: "跨国铁路",
+            name: "因特拉肯到巴黎",
+            place: "Interlaken, Basel SBB, Paris Gare de Lyon",
+            coords: [47.5476, 7.5896],
+            transport: "从 Apartment Anemone 民宿出发到因特拉肯西站，经伯尔尼/巴塞尔换 TGV Lyria 到巴黎里昂车站。",
+            booking: "瑞士境内用通票；TGV Lyria 国际段必须提前买，建议现在订。",
+            ticketLinks: [{ label: "TGV Lyria 订票", url: "https://www.tgv-lyria.com/fr/en/help/booking-train-tickets" }],
+            xhs: "瑞士 到 巴黎 TGV Lyria"
+          },
+          {
+            time: "13:30-15:00",
+            type: "入住",
+            name: "巴黎里昂车站到圣拉扎尔酒店区",
+            place: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France",
+            coords: [48.8761, 2.3258],
+            transport: "地铁 14 号线从里昂车站到圣拉扎尔，步行到 Hotel du Printemps。",
+            booking: "巴黎市内票另买。行李多可打车。",
+            xhs: "巴黎 里昂车站 到 圣拉扎尔"
+          },
+          {
+            time: "15:30-20:30",
+            type: "轻松逛",
+            name: "巴黎歌剧院、老佛爷、杜乐丽花园",
+            place: "Palais Garnier, Galeries Lafayette, Tuileries Garden",
+            coords: [48.8719, 2.3316],
+            transport: "酒店步行或地铁短途移动。",
+            booking: "歌剧院入内建议官网订；老佛爷屋顶免费但看现场开放。",
+            xhs: "巴黎 歌剧院 老佛爷 屋顶"
+          }
+        ]
+      },
+      {
+        date: "10/6",
+        title: "巴黎经典线",
+        sleep: "住宿：巴黎 Hotel du Printemps",
+        sleepPlace: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France",
+        route: "巴黎 Hotel du Printemps → 歌剧院 → 凯旋门 → 特罗卡德罗 → 埃菲尔铁塔 → 塞纳河游船 → 巴黎 Hotel du Printemps",
+        startPoint: { label: "起点：巴黎 Hotel du Printemps", place: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France", coords: [48.8756, 2.3253] },
+        endPoint: { label: "终点：巴黎 Hotel du Printemps", place: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France", coords: [48.8756, 2.3253] },
+        center: [48.86, 2.31],
+        zoom: 13,
+        stops: [
+          {
+            time: "09:00-11:30",
+            type: "右岸",
+            name: "巴黎歌剧院、马德莱娜教堂、旺多姆广场",
+            place: "Palais Garnier, Madeleine, Place Vendome",
+            coords: [48.8719, 2.3316],
+            transport: "从 Hotel du Printemps 步行到巴黎歌剧院，再串联马德莱娜教堂和旺多姆广场。",
+            booking: "歌剧院若入内，提前官网订自助参观票。",
+            ticketLinks: [{ label: "巴黎歌剧院票务", url: "https://www.operadeparis.fr/en/visits/palais-garnier" }],
+            xhs: "巴黎 歌剧院 马德莱娜 旺多姆"
+          },
+          {
+            time: "12:00-15:30",
+            type: "城市轴线",
+            name: "香榭丽舍大街、凯旋门",
+            place: "Champs-Elysees, Arc de Triomphe",
+            coords: [48.8738, 2.295],
+            transport: "地铁到香榭丽舍或凯旋门附近，步行游览。",
+            booking: "登凯旋门建议官网提前订票；只看外观不用票。",
+            ticketLinks: [{ label: "凯旋门票务", url: "https://www.paris-arc-de-triomphe.fr/en/" }],
+            xhs: "凯旋门 香榭丽舍 攻略"
+          },
+          {
+            time: "16:00-19:30",
+            type: "地标",
+            name: "特罗卡德罗、埃菲尔铁塔",
+            place: "Trocadero, Eiffel Tower",
+            coords: [48.8584, 2.2945],
+            transport: "凯旋门坐地铁到特罗卡德罗，先拍铁塔全景，再步行到铁塔。",
+            booking: "埃菲尔铁塔必须提前在官网订，顶层和日落票越早越好。",
+            ticketLinks: [{ label: "埃菲尔铁塔票务", url: "https://ticket.toureiffel.paris/en" }],
+            xhs: "埃菲尔铁塔 日落 拍照机位"
+          },
+          {
+            time: "20:00-21:30",
+            type: "夜景",
+            name: "塞纳河游船",
+            place: "Bateaux Mouches, Seine River Cruise",
+            coords: [48.8642, 2.3052],
+            transport: "从铁塔/阿尔玛桥一带步行到游船码头。夜游结束后打车或地铁回 Hotel du Printemps。",
+            booking: "Bateaux Mouches 官网买票，当天也可但建议提前。",
+            ticketLinks: [{ label: "塞纳河游船票务", url: "https://www.bateaux-mouches.fr/en/reservation/tickets" }],
+            xhs: "巴黎 塞纳河游船 夜景"
+          }
+        ]
+      },
+      {
+        date: "10/7",
+        title: "卢浮宫、圣礼拜堂、玛黑区",
+        sleep: "住宿：巴黎 Hotel du Printemps",
+        sleepPlace: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France",
+        route: "巴黎 Hotel du Printemps → 卢浮宫 → 圣礼拜堂 → 巴黎圣母院外观 → 玛黑区 → 巴黎 Hotel du Printemps",
+        startPoint: { label: "起点：巴黎 Hotel du Printemps", place: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France", coords: [48.8756, 2.3253] },
+        endPoint: { label: "终点：巴黎 Hotel du Printemps", place: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France", coords: [48.8756, 2.3253] },
+        center: [48.857, 2.345],
+        zoom: 13,
+        stops: [
+          {
+            time: "08:30-12:30",
+            type: "博物馆",
+            name: "卢浮宫",
+            place: "Louvre Museum",
+            coords: [48.8606, 2.3376],
+            transport: "从 Hotel du Printemps 坐地铁到卢浮宫，建议订 09:00 左右入场。",
+            booking: "必须提前在卢浮宫官网订时段票。注意卢浮宫周二闭馆，10/7 周三可安排。",
+            ticketLinks: [{ label: "卢浮宫票务", url: "https://ticket.louvre.fr/en" }],
+            xhs: "卢浮宫 半日 路线 蒙娜丽莎"
+          },
+          {
+            time: "13:00-14:30",
+            type: "彩窗",
+            name: "圣礼拜堂",
+            place: "Sainte-Chapelle",
+            coords: [48.8554, 2.345],
+            transport: "从卢浮宫步行或地铁到西岱岛。",
+            booking: "需要提前订 30 分钟时段票，建议订 13:30 或 14:00。",
+            ticketLinks: [{ label: "圣礼拜堂票务", url: "https://tickets.monuments-nationaux.fr/en-GB/products" }],
+            xhs: "巴黎 圣礼拜堂 彩窗"
+          },
+          {
+            time: "14:30-16:00",
+            type: "城市散步",
+            name: "巴黎圣母院外观、西岱岛",
+            place: "Notre-Dame de Paris, Ile de la Cite",
+            coords: [48.853, 2.3499],
+            transport: "从圣礼拜堂步行过去。",
+            booking: "外观免费。若想入内，按官网开放与预约规则确认。",
+            xhs: "巴黎圣母院 西岱岛 散步"
+          },
+          {
+            time: "16:00-20:30",
+            type: "街区",
+            name: "玛黑区、孚日广场",
+            place: "Le Marais, Place des Vosges",
+            coords: [48.8556, 2.3655],
+            transport: "从巴黎圣母院步行过河到玛黑区，晚餐后地铁回酒店。",
+            booking: "街区免费。Breizh Cafe 等热门餐厅建议提前订。",
+            ticketLinks: [{ label: "Breizh Cafe 订位", url: "https://www.breizhcafe.com/le-marais" }],
+            xhs: "巴黎 玛黑区 孚日广场 美食"
+          }
+        ]
+      },
+      {
+        date: "10/8",
+        title: "巴黎返程",
+        sleep: "返程航班",
+        sleepPlace: "Cathay Pacific CDG Terminal 2A, Paris Charles de Gaulle Airport, France",
+        route: "巴黎 Hotel du Printemps → 巴黎北站/沙特莱 → 戴高乐机场 2A 航站楼",
+        startPoint: { label: "起点：巴黎 Hotel du Printemps", place: "Hotel du Printemps, 1 Rue de l'Isly, 75008 Paris, France", coords: [48.8756, 2.3253] },
+        endPoint: { label: "终点：巴黎戴高乐机场 2A 航站楼", place: "Paris Charles de Gaulle Airport Terminal 2A", coords: [49.0032, 2.567] },
+        center: [48.95, 2.45],
+        zoom: 10,
+        stops: [
+          {
+            time: "08:00-09:20",
+            type: "机场交通",
+            name: "酒店到巴黎戴高乐机场 2 号航站楼",
+            place: "Hotel du Printemps to Paris Charles de Gaulle Airport Terminal 2A",
+            coords: [49.0032, 2.567],
+            transport: "公共交通：圣拉扎尔附近地铁到沙特莱或巴黎北站，换 RER B 到戴高乐机场 2 号。行李多建议打车。",
+            booking: "RER 机场票可用巴黎交通 App 买。12:20 起飞，建议 09:20 前到机场。",
+            xhs: "巴黎市区 到 戴高乐机场 RER B"
+          }
+        ]
+      }
+    ];
+
+    let current = 0;
+    let map;
+    let markers = [];
+    let routeLine;
+    let activeTileLayer;
+    let tileLayerIndex = 0;
+    let tileLoadTimer;
+    const tileLayers = [
+      {
+        name: "OpenStreetMap",
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        options: { maxZoom: 18, attribution: "&copy; OpenStreetMap" }
+      },
+      {
+        name: "Carto Voyager",
+        url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        options: { maxZoom: 19, attribution: "&copy; OpenStreetMap &copy; CARTO" }
+      }
+    ];
+
+    function googleMapsUrl(place) {
+      return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place);
+    }
+
+    function dayRouteUrl(day) {
+      const points = [
+        day.startPoint.place,
+        ...day.stops.map((stop) => stop.place),
+        day.endPoint.place
+      ];
+      const origin = points[0];
+      const destination = points[points.length - 1];
+      const waypoints = points.slice(1, -1).join("|");
+      let url = "https://www.google.com/maps/dir/?api=1&travelmode=transit";
+      url += "&origin=" + encodeURIComponent(origin);
+      url += "&destination=" + encodeURIComponent(destination);
+      if (waypoints) url += "&waypoints=" + encodeURIComponent(waypoints);
+      return url;
+    }
+
+    function xhsUrl(query) {
+      return "https://www.xiaohongshu.com/search_result?keyword=" + encodeURIComponent(query);
+    }
+
+    function makeStopLink(label, url, className = "") {
+      return `<a class="btn ${className}" target="_blank" rel="noopener" href="${url}">${label}</a>`;
+    }
+
+    function renderTabs() {
+      const tabs = document.getElementById("tabs");
+      tabs.innerHTML = itinerary.map((day, index) => (
+        `<button class="tab ${index === current ? "active" : ""}" data-index="${index}">${day.date}</button>`
+      )).join("");
+      tabs.querySelectorAll(".tab").forEach((button) => {
+        button.addEventListener("click", () => {
+          current = Number(button.dataset.index);
+          render();
+        });
+      });
+    }
+
+    function renderDay() {
+      const day = itinerary[current];
+      const stops = day.stops.map((stop, index) => {
+        const ticketLinks = (stop.ticketLinks || []).map((ticket) => (
+          makeStopLink(ticket.label, ticket.url, "ticket")
+        )).join("");
+        return `
+          <section class="stop">
+            <div class="num">${String(index + 1).padStart(2, "0")}</div>
+            <div class="stop-body">
+              <div class="meta">
+                <span>${stop.time}</span>
+                <span>${stop.type}</span>
+              </div>
+              <h3>${stop.name}</h3>
+              <p class="desc">${stop.transport}</p>
+              <div class="booking">
+                <div><strong>门票/预订：</strong>${stop.booking}</div>
+                ${ticketLinks ? `<div class="ticket-row"><strong>票务链接：</strong>${ticketLinks}</div>` : ""}
+              </div>
+              <div class="stop-links">
+                ${makeStopLink("Google Maps", googleMapsUrl(stop.place), "primary")}
+                ${makeStopLink("小红书搜索", xhsUrl(stop.xhs))}
+              </div>
+            </div>
+          </section>
+        `;
+      }).join("");
+
+      document.getElementById("dayCard").innerHTML = `
+        <header class="day-head">
+          <div>
+            <h2>${day.date} ${day.title}</h2>
+            <div class="route-title">${day.route}</div>
+            <div class="route-anchors">
+              <a class="anchor-tag" target="_blank" rel="noopener" href="${googleMapsUrl(day.startPoint.place)}">${day.startPoint.label}</a>
+              <a class="anchor-tag" target="_blank" rel="noopener" href="${googleMapsUrl(day.endPoint.place)}">${day.endPoint.label}</a>
+            </div>
+            <div class="quick-links">
+              ${makeStopLink("当天完整路线", dayRouteUrl(day), "lake")}
+            </div>
+          </div>
+          <a class="badge stay-link" target="_blank" rel="noopener" href="${googleMapsUrl(day.sleepPlace || day.sleep)}">${day.sleep}</a>
+        </header>
+        <div class="timeline">${stops}</div>
+      `;
+    }
+
+    function showMapFallback() {
+      const fallback = document.getElementById("mapFallback");
+      const fallbackRoute = document.getElementById("fallbackRoute");
+      fallbackRoute.href = dayRouteUrl(itinerary[current]);
+      fallback.classList.add("show");
+    }
+
+    function hideMapFallback() {
+      document.getElementById("mapFallback").classList.remove("show");
+    }
+
+    function installTileLayer(index = 0) {
+      tileLayerIndex = index;
+      if (activeTileLayer) activeTileLayer.remove();
+      const config = tileLayers[tileLayerIndex];
+      activeTileLayer = L.tileLayer(config.url, config.options).addTo(map);
+      clearTimeout(tileLoadTimer);
+      tileLoadTimer = setTimeout(() => {
+        if (tileLayerIndex < tileLayers.length - 1) {
+          installTileLayer(tileLayerIndex + 1);
+        } else {
+          showMapFallback();
+        }
+      }, 4500);
+      activeTileLayer.once("load", () => {
+        clearTimeout(tileLoadTimer);
+        hideMapFallback();
+      });
+      activeTileLayer.once("tileerror", () => {
+        clearTimeout(tileLoadTimer);
+        if (tileLayerIndex < tileLayers.length - 1) {
+          installTileLayer(tileLayerIndex + 1);
+        } else {
+          showMapFallback();
+        }
+      });
+    }
+
+    function renderMap() {
+      const day = itinerary[current];
+      document.getElementById("fallbackRoute").href = dayRouteUrl(day);
+      if (!window.L) {
+        showMapFallback();
+        return;
+      }
+      if (!map) {
+        map = L.map("map", { zoomControl: true, scrollWheelZoom: false }).setView(day.center, day.zoom);
+        installTileLayer(0);
+      }
+
+      markers.forEach((marker) => marker.remove());
+      markers = [];
+      if (routeLine) routeLine.remove();
+
+      const routePoints = [
+        { ...day.startPoint, name: day.startPoint.label, type: "起点", time: "Start", isAnchor: true },
+        ...day.stops,
+        { ...day.endPoint, name: day.endPoint.label, type: "终点", time: "End", isAnchor: true }
+      ];
+      const coords = routePoints.map((point) => point.coords);
+      routeLine = L.polyline(coords, {
+        color: "#2f8fa4",
+        weight: 4,
+        opacity: 0.82,
+        dashArray: "8 8"
+      }).addTo(map);
+
+      routePoints.forEach((stop, index) => {
+        const label = stop.isAnchor ? (index === 0 ? "起" : "终") : String(index).padStart(2, "0");
+        const icon = L.divIcon({
+          html: `<div class="pin-label ${stop.isAnchor ? "anchor" : ""}">${label}</div>`,
+          className: "",
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        });
+        const marker = L.marker(stop.coords, { icon }).addTo(map);
+        marker.bindPopup(`<div class="popup-title">${stop.name}</div><div class="popup-text">${stop.time} · ${stop.type}</div>`);
+        markers.push(marker);
+      });
+
+      if (coords.length === 1) {
+        map.setView(coords[0], day.zoom);
+      } else {
+        map.fitBounds(routeLine.getBounds(), { padding: [45, 45], maxZoom: day.zoom });
+      }
+    }
+
+    function render() {
+      renderTabs();
+      renderDay();
+      renderMap();
+    }
+
+    document.getElementById("prevDay").addEventListener("click", () => {
+      current = (current + itinerary.length - 1) % itinerary.length;
+      render();
+    });
+
+    document.getElementById("nextDay").addEventListener("click", () => {
+      current = (current + 1) % itinerary.length;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
