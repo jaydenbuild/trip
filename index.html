@@ -126,6 +126,30 @@
       display: flex;
     }
 
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      z-index: 1200;
+      max-width: min(92vw, 560px);
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 12px 14px;
+      border: 1px solid rgba(29, 37, 40, 0.2);
+      background: rgba(29, 37, 40, 0.94);
+      color: #fffaf0;
+      box-shadow: 0 14px 34px rgba(29, 37, 40, 0.24);
+      font-size: 14px;
+      line-height: 1.5;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
     .map-note {
       display: flex;
       flex-wrap: wrap;
@@ -491,6 +515,7 @@
       <article class="day-card" id="dayCard"></article>
     </section>
   </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -1084,10 +1109,15 @@
 
     function xhsWebFallbackUrl(query) {
       return "https://www.google.com/search?q=" + encodeURIComponent("site:xiaohongshu.com " + query);
+      return "https://www.baidu.com/s?wd=" + encodeURIComponent("site:xiaohongshu.com " + query);
     }
 
     function makeStopLink(label, url, className = "") {
       return `<a class="btn ${className}" target="_blank" rel="noopener" href="${url}">${label}</a>`;
+    }
+
+    function makeCopyButton(query) {
+      return `<button class="btn xhs-copy" type="button" data-query="${query.replace(/"/g, "&quot;")}">复制小红书关键词</button>`;
     }
 
     function renderTabs() {
@@ -1127,6 +1157,8 @@
                 ${makeStopLink("Google Maps", googleMapsUrl(stop.place), "primary")}
                 ${makeStopLink("小红书App", xhsAppUrl(stop.xhs))}
                 ${makeStopLink("网页备用", xhsWebFallbackUrl(stop.xhs))}
+                ${makeCopyButton(stop.xhs)}
+                ${makeStopLink("百度搜小红书", xhsWebFallbackUrl(stop.xhs))}
               </div>
             </div>
           </section>
@@ -1150,6 +1182,26 @@
         </header>
         <div class="timeline">${stops}</div>
       `;
+
+      document.querySelectorAll(".xhs-copy").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const query = button.dataset.query;
+          try {
+            await navigator.clipboard.writeText(query);
+            showToast(`已复制：${query}。现在打开小红书 App，粘贴搜索即可。`);
+          } catch (error) {
+            showToast(`请手动复制关键词：${query}`);
+          }
+        });
+      });
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 3600);
     }
 
     function showMapFallback() {
