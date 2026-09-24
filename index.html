@@ -304,6 +304,12 @@
       border-color: #236a7b;
     }
 
+    .btn.xhs {
+      background: #ff2442;
+      color: white;
+      border-color: #c81d34;
+    }
+
     .btn.ticket {
       background: var(--forest);
       color: white;
@@ -463,7 +469,7 @@
         <div class="kicker">Swiss + Paris, 2026 National Day</div>
         <h1>瑞士与巴黎<br />逐日路线板</h1>
         <p class="summary">
-          按日期切换查看当天路线。地图显示当日主要移动顺序；每个景点都提供 Google Maps 入口。
+          按日期切换查看当天路线。地图显示当日主要移动顺序；每个景点都提供 Google Maps 和小红书搜索入口。
           瑞士段默认使用 9/28-10/5 连续 8 日瑞士旅行通票。
         </p>
       </section>
@@ -1061,6 +1067,10 @@
       return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place);
     }
 
+    function xhsSearchUrl(query) {
+      return "xhsdiscover://search/result?keyword=" + encodeURIComponent(query);
+    }
+
     function dayRouteUrl(day) {
       const points = [
         day.startPoint.place,
@@ -1116,6 +1126,7 @@
               </div>
               <div class="stop-links">
                 ${makeStopLink("Google Maps", googleMapsUrl(stop.place), "primary")}
+                ${makeStopLink("小红书", xhsSearchUrl(stop.xhs), "xhs")}
               </div>
             </div>
           </section>
