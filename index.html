@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>瑞士与巴黎国庆行程</title>
   <link rel="preconnect" href="https://unpkg.com" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /></noscript>
   <style>
     :root {
       --ink: #1d2528;
@@ -462,7 +463,7 @@
         <div class="kicker">Swiss + Paris, 2026 National Day</div>
         <h1>瑞士与巴黎<br />逐日路线板</h1>
         <p class="summary">
-          按日期切换查看当天路线。地图显示当日主要移动顺序；每个景点都提供 Google Maps 和小红书搜索入口。
+          按日期切换查看当天路线。地图显示当日主要移动顺序；每个景点都提供 Google Maps 入口。
           瑞士段默认使用 9/28-10/5 连续 8 日瑞士旅行通票。
         </p>
       </section>
@@ -491,8 +492,7 @@
       <article class="day-card" id="dayCard"></article>
     </section>
   </main>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script async src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onload="window.refreshItineraryMap && window.refreshItineraryMap()" onerror="window.leafletFailed=true"></script>
   <script>
     const itinerary = [
       {
@@ -761,29 +761,16 @@
       },
       {
         date: "10/3",
-        title: "雪尼格普拉特与布里恩茨湖",
         title: "布里恩茨湖游船与施皮茨",
         sleep: "住宿：因特拉肯 Apartment Anemone 民宿",
         sleepPlace: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland",
-        route: "因特拉肯 Apartment Anemone 民宿 → 维尔德斯维尔 → 雪尼格普拉特 → 布里恩茨湖 → 因特拉肯 Apartment Anemone 民宿",
         route: "因特拉肯 Apartment Anemone 民宿 → 布里恩茨小镇 → 布里恩茨湖游船 → 因特拉肯东站 → 施皮茨 → 因特拉肯 Apartment Anemone 民宿",
         startPoint: { label: "起点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
         endPoint: { label: "终点：因特拉肯 Apartment Anemone 民宿", place: "Rugenparkstrasse 19, 3800 Interlaken, Switzerland", coords: [46.6828, 7.8498] },
-        center: [46.69, 7.94],
-        zoom: 11,
         center: [46.71, 7.82],
         zoom: 10,
         stops: [
           {
-            time: "08:00-09:00",
-            type: "上山",
-            name: "维尔德斯维尔到雪尼格普拉特",
-            place: "Wilderswil to Schynige Platte",
-            coords: [46.6556, 7.9049],
-            transport: "从 Apartment Anemone 民宿到因特拉肯西站，再去维尔德斯维尔，换复古齿轨铁路上山。",
-            booking: "需补票。建议出发前 1-3 天看天气后在 Jungfrau 官网买。",
-            ticketLinks: [{ label: "Jungfrau 雪尼格普拉特票务", url: "https://www.jungfrau.ch/en-gb/schynige-platte/" }],
-            xhs: "雪尼格普拉特 齿轨铁路"
             time: "08:30-10:40",
             type: "湖边小镇",
             name: "布里恩茨、布里恩茨湖边、木雕街区",
@@ -794,14 +781,6 @@
             xhs: "布里恩茨 瑞士 湖边 小镇"
           },
           {
-            time: "09:00-13:30",
-            type: "观景",
-            name: "雪尼格普拉特观景台、短线徒步",
-            place: "Schynige Platte",
-            coords: [46.6556, 7.9049],
-            transport: "山上步行游览，可走短线观景环线。",
-            booking: "雪尼格普拉特 2026 运营期到 10/25。天气不好可改为湖区小镇。",
-            xhs: "雪尼格普拉特 徒步 攻略"
             time: "10:40-12:00",
             type: "布里恩茨湖游船",
             name: "布里恩茨到因特拉肯东站游船",
@@ -816,15 +795,6 @@
             xhs: "布里恩茨湖 游船 因特拉肯"
           },
           {
-            time: "14:30-17:30",
-            type: "湖船",
-            name: "布里恩茨湖、伊瑟尔特瓦尔德或吉斯巴赫",
-            place: "Lake Brienz, Iseltwald, Giessbach",
-            coords: [46.712, 7.963],
-            transport: "回因特拉肯东站码头，按船班选择伊瑟尔特瓦尔德/吉斯巴赫/布里恩茨停靠。晚些时候回因特拉肯西站，再回民宿。",
-            booking: "湖船瑞士旅行通票覆盖。当天按 BLS 船班决定停靠点。",
-            ticketLinks: [{ label: "BLS 湖船时刻", url: "https://www.bls-schiff.ch/en/lake-cruise/timetable" }],
-            xhs: "布里恩茨湖 伊瑟尔特瓦尔德 吉斯巴赫"
             time: "12:20-18:30",
             type: "湖畔城堡",
             name: "施皮茨、施皮茨城堡、湖边公园",
@@ -1107,18 +1077,6 @@
       return url;
     }
 
-    function xhsUrl(query) {
-      return "https://www.xiaohongshu.com/search_result?keyword=" + encodeURIComponent(query);
-    }
-
-    function xhsAppUrl(query) {
-      return "xhsdiscover://search/result?keyword=" + encodeURIComponent(query);
-    }
-
-    function xhsWebFallbackUrl(query) {
-      return "https://www.google.com/search?q=" + encodeURIComponent("site:xiaohongshu.com " + query);
-    }
-
     function makeStopLink(label, url, className = "") {
       return `<a class="btn ${className}" target="_blank" rel="noopener" href="${url}">${label}</a>`;
     }
@@ -1158,8 +1116,6 @@
               </div>
               <div class="stop-links">
                 ${makeStopLink("Google Maps", googleMapsUrl(stop.place), "primary")}
-                ${makeStopLink("小红书App", xhsAppUrl(stop.xhs))}
-                ${makeStopLink("网页备用", xhsWebFallbackUrl(stop.xhs))}
               </div>
             </div>
           </section>
@@ -1277,6 +1233,11 @@
       renderDay();
       renderMap();
     }
+
+    window.refreshItineraryMap = function () {
+      if (!window.L) return;
+      renderMap();
+    };
 
     document.getElementById("prevDay").addEventListener("click", () => {
       current = (current + itinerary.length - 1) % itinerary.length;
